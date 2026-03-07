@@ -245,14 +245,8 @@ class ScrapyPriorityQueue:
         return list(active)
 
     def __len__(self) -> int:
-        return (
-            sum(
-                len(x)
-                for queues in (self.queues, self._start_queues)
-                for x in queues.values()
-            )
-            if self.queues or self._start_queues
-            else 0
+        return sum(map(len, self.queues.values())) + sum(
+            map(len, self._start_queues.values())
         )
 
 
@@ -404,7 +398,7 @@ class DownloaderAwarePriorityQueue:
         return active
 
     def __len__(self) -> int:
-        return sum(len(x) for x in self.pqueues.values()) if self.pqueues else 0
+        return sum(map(len, self.pqueues.values()))
 
     def __contains__(self, slot: str) -> bool:
         return slot in self.pqueues
