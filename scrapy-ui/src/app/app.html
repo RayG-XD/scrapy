@@ -1,2 +1,6 @@
-<app-dashboard></app-dashboard>
-<router-outlet />
+<div class="flex h-screen w-screen overflow-hidden bg-gray-50">
+  <app-sidebar class="flex-none"></app-sidebar>
+  <main class="flex-grow overflow-y-auto">
+    <router-outlet></router-outlet>
+  </main>
+</div>
