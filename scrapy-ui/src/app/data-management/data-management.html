@@ -1,0 +1,213 @@
+<div class="data-management-container p-6 w-full h-full flex flex-col bg-slate-50 overflow-hidden">
+
+  <div class="mb-6 flex justify-between items-center">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-800 m-0">Data Management</h1>
+      <p class="text-slate-500 text-sm mt-1">Define item schemas, configure processing pipelines, and manage exports.</p>
+    </div>
+  </div>
+
+  <mat-card class="flex-grow shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+    <mat-tab-group class="flex-grow h-full custom-tabs" mat-stretch-tabs="false">
+
+      <!-- ==================== TAB 1: ITEM SCHEMA BUILDER ==================== -->
+      <mat-tab label="Items">
+         <ng-template mat-tab-label>
+           <mat-icon class="mr-2 text-slate-500">list_alt</mat-icon>
+           Item Schema
+         </ng-template>
+
+         <div class="p-6 h-full flex gap-6 overflow-hidden">
+            <!-- Left Side: Form to create item -->
+            <div class="w-1/2 flex flex-col h-full bg-white border border-slate-200 rounded p-6 shadow-sm overflow-y-auto">
+               <h2 class="text-lg font-semibold text-slate-700 mb-4 border-b border-slate-100 pb-2 flex items-center gap-2">
+                 <mat-icon class="text-blue-500 text-xl w-5 h-5 leading-5">add_circle</mat-icon> Define New Item
+               </h2>
+
+               <form [formGroup]="itemForm" (ngSubmit)="saveItem()" class="flex flex-col gap-4">
+                  <mat-form-field appearance="outline" class="w-full">
+                     <mat-label>Item Class Name</mat-label>
+                     <input matInput formControlName="itemName" placeholder="e.g. ProductItem">
+                     <mat-error>Name is required</mat-error>
+                  </mat-form-field>
+
+                  <div formArrayName="fields" class="flex flex-col gap-2">
+                     <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-slate-600 uppercase tracking-wider">Item Fields</span>
+                        <button type="button" mat-stroked-button color="primary" class="h-8 py-0 px-2 leading-8 text-xs" (click)="addField()">
+                          <mat-icon class="text-[18px] w-[18px] h-[18px] leading-[18px] mr-1">add</mat-icon> Add Field
+                        </button>
+                     </div>
+
+                     <div *ngFor="let field of fields.controls; let i=index" [formGroupName]="i" class="flex gap-2 items-start bg-slate-50 p-2 rounded border border-slate-100 relative group transition-colors hover:bg-slate-100">
+                        <mat-form-field appearance="outline" class="flex-grow pb-0 mb-0 dense-field">
+                           <mat-label>Field Name</mat-label>
+                           <input matInput formControlName="name" placeholder="e.g. price">
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline" class="w-32 pb-0 mb-0 dense-field">
+                           <mat-label>Type Hint</mat-label>
+                           <mat-select formControlName="type">
+                             <mat-option value="string">String</mat-option>
+                             <mat-option value="integer">Integer</mat-option>
+                             <mat-option value="array">Array</mat-option>
+                           </mat-select>
+                        </mat-form-field>
+
+                        <button type="button" mat-icon-button color="warn" class="mt-1 opacity-50 group-hover:opacity-100 transition-opacity" (click)="removeField(i)" [disabled]="fields.length === 1">
+                           <mat-icon>delete</mat-icon>
+                        </button>
+                     </div>
+                  </div>
+
+                  <div class="mt-4 flex justify-end">
+                    <button type="submit" mat-flat-button color="primary" [disabled]="itemForm.invalid">
+                       <mat-icon class="mr-2">save</mat-icon> Save Schema
+                    </button>
+                  </div>
+               </form>
+
+               <!-- Code Preview box underneath form -->
+               <div class="mt-6 bg-slate-900 rounded p-4 border border-slate-800 flex-grow shadow-inner overflow-hidden flex flex-col">
+                  <div class="text-xs text-slate-400 font-mono mb-2 uppercase tracking-widest flex items-center justify-between">
+                    <span>Generated Code (items.py)</span>
+                    <mat-icon class="text-slate-500 text-sm w-[14px] h-[14px] leading-[14px]">content_copy</mat-icon>
+                  </div>
+                  <pre class="text-green-400 font-mono text-xs whitespace-pre-wrap overflow-y-auto m-0 flex-grow">{{ getGeneratedPythonCode() }}</pre>
+               </div>
+            </div>
+
+            <!-- Right Side: Existing Items List -->
+            <div class="w-1/2 h-full flex flex-col bg-slate-100 border border-slate-200 rounded p-6 overflow-y-auto">
+               <h2 class="text-lg font-semibold text-slate-700 mb-4 flex items-center gap-2">
+                 <mat-icon class="text-slate-500 text-xl w-5 h-5 leading-5">inventory_2</mat-icon> Registered Items
+               </h2>
+
+               <div *ngIf="definedItems.length === 0" class="text-center text-slate-400 p-8">
+                  No items defined yet.
+               </div>
+
+               <div class="flex flex-col gap-4">
+                 <mat-card *ngFor="let item of definedItems" class="shadow-sm border border-slate-300">
+                   <mat-card-header class="bg-white border-b border-slate-100 py-2">
+                     <mat-icon mat-card-avatar class="text-slate-400 mt-1">data_object</mat-icon>
+                     <mat-card-title class="text-md text-blue-700 font-mono font-bold">{{item.name}}</mat-card-title>
+                     <mat-card-subtitle class="text-xs">Extends scrapy.Item</mat-card-subtitle>
+                   </mat-card-header>
+                   <mat-card-content class="p-3 bg-slate-50">
+                     <div class="flex flex-wrap gap-2">
+                        <span *ngFor="let field of item.fields" class="px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs font-mono text-slate-600">
+                          {{field}}
+                        </span>
+                     </div>
+                   </mat-card-content>
+                 </mat-card>
+               </div>
+            </div>
+         </div>
+      </mat-tab>
+
+      <!-- ==================== TAB 2: PIPELINES ==================== -->
+      <mat-tab label="Pipelines">
+         <ng-template mat-tab-label>
+           <mat-icon class="mr-2 text-slate-500">route</mat-icon>
+           Pipelines Config
+         </ng-template>
+
+         <div class="p-6 h-full flex flex-col overflow-hidden max-w-4xl mx-auto">
+            <div class="mb-6 bg-blue-50 border border-blue-100 text-blue-800 p-4 rounded flex items-start gap-3">
+              <mat-icon class="text-blue-500">info</mat-icon>
+              <div>
+                <p class="m-0 text-sm">Drag and drop pipelines to set their execution order. Lower priority numbers run first.</p>
+                <p class="m-0 text-xs mt-1 text-blue-600">This modifies the <code>ITEM_PIPELINES</code> dictionary in your settings.</p>
+              </div>
+            </div>
+
+            <!-- Drag and Drop List Container -->
+            <div class="bg-slate-100 p-4 rounded border border-slate-300 flex-grow overflow-y-auto pipeline-list" cdkDropList (cdkDropListDropped)="dropPipeline($event)">
+
+               <div *ngFor="let pipe of pipelines" cdkDrag class="pipeline-item mb-2 last:mb-0 cursor-move shadow-sm bg-white border rounded flex items-center" [ngClass]="{'border-slate-300': pipe.active, 'border-slate-200 opacity-60': !pipe.active, 'bg-slate-50': !pipe.active}">
+                  <!-- Drag Handle Area -->
+                  <div class="p-4 border-r border-slate-100 text-slate-300 flex items-center justify-center bg-slate-50 hover:bg-slate-100 transition-colors" cdkDragHandle>
+                     <mat-icon>drag_indicator</mat-icon>
+                  </div>
+
+                  <!-- Priority Badge -->
+                  <div class="w-20 flex justify-center border-r border-slate-100 py-2">
+                    <span class="px-2 py-1 bg-slate-100 rounded text-xs font-mono font-bold text-slate-500 border border-slate-200" [ngClass]="{'text-blue-600 bg-blue-50 border-blue-200': pipe.active}">
+                      {{pipe.priority}}
+                    </span>
+                  </div>
+
+                  <!-- Content Area -->
+                  <div class="p-4 flex-grow flex flex-col justify-center">
+                     <span class="font-semibold text-slate-800" [ngClass]="{'line-through text-slate-400': !pipe.active}">{{pipe.name}}</span>
+                     <span class="text-xs font-mono text-slate-400 truncate">{{pipe.path}}</span>
+                  </div>
+
+                  <!-- Actions Area -->
+                  <div class="p-4 flex items-center justify-end gap-4 w-32">
+                     <mat-slide-toggle [checked]="pipe.active" (change)="togglePipeline(pipe)" color="primary"></mat-slide-toggle>
+                  </div>
+
+                  <!-- Drag Preview (Customizes appearance while dragging) -->
+                  <div *cdkDragPreview class="shadow-lg bg-white border border-blue-300 rounded flex items-center opacity-90 p-4 font-semibold text-blue-800 w-96">
+                    <mat-icon class="mr-4 text-slate-400">drag_indicator</mat-icon> {{pipe.name}}
+                  </div>
+               </div>
+
+            </div>
+         </div>
+      </mat-tab>
+
+      <!-- ==================== TAB 3: FEED EXPORTS ==================== -->
+      <mat-tab label="Exports">
+         <ng-template mat-tab-label>
+           <mat-icon class="mr-2 text-slate-500">output</mat-icon>
+           Feed Exports
+         </ng-template>
+
+         <div class="p-6 h-full flex flex-col overflow-hidden max-w-5xl mx-auto w-full">
+            <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-4">
+              <h2 class="text-xl font-semibold text-slate-700 m-0">Configured FEEDS</h2>
+              <button mat-flat-button color="primary" (click)="addNewExport()">
+                <mat-icon class="mr-2">add</mat-icon> ADD EXPORT
+              </button>
+            </div>
+
+            <div class="flex-grow overflow-y-auto flex flex-col gap-4">
+               <mat-card *ngFor="let feed of exportFeeds" class="shadow-sm border transition-colors" [ngClass]="{'border-green-300': feed.active, 'border-slate-300 opacity-70': !feed.active}">
+                  <div class="flex">
+                    <!-- Icon Section -->
+                    <div class="w-16 flex items-center justify-center border-r" [ngClass]="{'bg-green-50 border-green-100 text-green-600': feed.active, 'bg-slate-100 border-slate-200 text-slate-400': !feed.active}">
+                       <mat-icon class="text-3xl w-8 h-8 leading-8">{{ feed.uri.startsWith('s3') ? 'cloud' : (feed.uri.startsWith('ftp') ? 'cloud_upload' : 'folder') }}</mat-icon>
+                    </div>
+
+                    <!-- Details Section -->
+                    <div class="p-4 flex-grow flex flex-col justify-center">
+                       <div class="font-mono text-sm font-bold text-slate-800 break-all mb-1">{{feed.uri}}</div>
+                       <div class="flex gap-4 text-xs text-slate-500 font-mono">
+                          <span>Format: <strong class="uppercase text-slate-700">{{feed.format}}</strong></span>
+                          <span>Encoding: <strong>{{feed.encoding}}</strong></span>
+                       </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="p-4 flex flex-col items-end justify-between border-l border-slate-100 w-48 bg-slate-50">
+                       <mat-slide-toggle [checked]="feed.active" (change)="feed.active = !feed.active" class="mb-2">
+                         <span class="text-xs uppercase font-semibold text-slate-500">{{ feed.active ? 'Enabled' : 'Disabled' }}</span>
+                       </mat-slide-toggle>
+
+                       <button mat-stroked-button color="accent" class="w-full text-xs" (click)="testConnection(feed)" [disabled]="!feed.active">
+                         <mat-icon class="text-sm w-4 h-4 leading-4 mr-1">bolt</mat-icon> Test Output
+                       </button>
+                    </div>
+                  </div>
+               </mat-card>
+            </div>
+         </div>
+      </mat-tab>
+
+    </mat-tab-group>
+  </mat-card>
+</div>
