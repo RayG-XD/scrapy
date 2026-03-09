@@ -1,0 +1,37 @@
+.interactive-shell-container {
+    height: calc(100vh - 64px); /* Assuming top nav is ~64px */
+    max-height: calc(100vh - 64px);
+    overflow: hidden;
+}
+
+mat-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.custom-tabs {
+    height: 100%;
+}
+
+.custom-tabs ::ng-deep .mat-mdc-tab-body-wrapper {
+    height: 100%;
+    flex-grow: 1;
+}
+
+.custom-tabs ::ng-deep .mat-mdc-tab-body {
+    height: 100%;
+}
+
+.custom-tabs ::ng-deep .mat-mdc-tab-group {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Adjust the URL field to look good next to the big button */
+.url-field ::ng-deep .mat-mdc-text-field-wrapper {
+    background-color: white;
+}
+
+.url-field ::ng-deep .mdc-text-field--outlined {
+    height: 56px;
+}
