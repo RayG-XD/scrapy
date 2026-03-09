@@ -162,3 +162,16 @@ class TestHeaders:
             Headers().setdefault("foo", object())
         with pytest.raises(TypeError, match="Unsupported value type"):
             Headers().setlist("foo", [object()])
+
+    def test_empty_list(self):
+        h = Headers()
+        # triggering IndexError is as simple as manually creating a CaselessDict
+        # with an empty list for a key
+        dict.__setitem__(h, b"X-Empty", [])
+        assert h.get(b"X-Empty") is None
+        assert h[b"X-Empty"] is None
+
+        # confirming standard behavior for missing keys
+        assert h.get(b"X-Missing") is None
+        with pytest.raises(KeyError):
+            h[b"X-Missing"]
