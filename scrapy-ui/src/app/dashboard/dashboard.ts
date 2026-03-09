@@ -4,6 +4,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { DatePipe, CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { OnInit } from '@angular/core';
 
 export interface ActiveJob {
   id: string;
@@ -38,13 +40,34 @@ export interface RecentJob {
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
-export class Dashboard {
-  // System Health
-  activeJobsCount = 3;
-  itemsScraped24h = '45,210';
-  pagesCrawled24h = '12,050';
-  errorRate = '0.5%';
-  memoryUsage = '256 MB';
+export class Dashboard implements OnInit {
+  // System Health (Initial placeholders, to be updated by API)
+  activeJobsCount = 0;
+  itemsScraped24h = '0';
+  pagesCrawled24h = '0';
+  errorRate = '0%';
+  memoryUsage = '0 MB';
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit() {
+    this.fetchSystemStatus();
+  }
+
+  fetchSystemStatus() {
+    this.http.get<any>('/api/system-status').subscribe({
+      next: (data) => {
+        this.activeJobsCount = data.active_jobs;
+        this.itemsScraped24h = data.items_scraped.toLocaleString();
+        this.pagesCrawled24h = data.pages_crawled.toLocaleString();
+        this.errorRate = data.error_rate;
+        this.memoryUsage = data.memory_usage;
+      },
+      error: (err) => {
+        console.error('Failed to fetch system status from backend API:', err);
+      }
+    });
+  }
 
   // Active Jobs Table Data
   displayedActiveColumns: string[] = ['id', 'spider', 'status', 'duration', 'items', 'speed', 'actions'];
