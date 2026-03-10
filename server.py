@@ -79,6 +79,65 @@ async def get_spiders():
         }
     ]
 
+
+@app.get("/api/jobs")
+async def get_all_jobs():
+    return [
+        {
+          "id": "job-105",
+          "spider": "amazon_products",
+          "status": "Running",
+          "startedAt": "2023-10-25T11:45:00Z",
+          "elapsedTime": "00:15:22",
+          "itemsScraped": 1250,
+          "itemsPerMin": 81.3,
+          "errorCount": 2
+        },
+        {
+          "id": "job-104",
+          "spider": "news_crawler",
+          "status": "Paused",
+          "startedAt": "2023-10-25T11:15:00Z",
+          "elapsedTime": "00:45:00",
+          "itemsScraped": 850,
+          "itemsPerMin": 0,
+          "errorCount": 0
+        },
+        {
+          "id": "job-103",
+          "spider": "crypto_prices",
+          "status": "Completed",
+          "startedAt": "2023-10-25T10:00:00Z",
+          "endedAt": "2023-10-25T10:10:00Z",
+          "elapsedTime": "00:10:00",
+          "itemsScraped": 450,
+          "itemsPerMin": 45.0,
+          "errorCount": 0
+        },
+        {
+          "id": "job-102",
+          "spider": "real_estate_scraper",
+          "status": "Failed",
+          "startedAt": "2023-10-25T07:00:00Z",
+          "endedAt": "2023-10-25T07:05:12Z",
+          "elapsedTime": "00:05:12",
+          "itemsScraped": 12,
+          "itemsPerMin": 2.3,
+          "errorCount": 50
+        },
+        {
+          "id": "job-101",
+          "spider": "amazon_products",
+          "status": "Completed",
+          "startedAt": "2023-10-24T12:00:00Z",
+          "endedAt": "2023-10-24T13:00:00Z",
+          "elapsedTime": "01:00:00",
+          "itemsScraped": 15000,
+          "itemsPerMin": 250.0,
+          "errorCount": 15
+        }
+    ]
+
 # --- Static Files / Angular Application Routing ---
 
 # Path to the compiled Angular build output
