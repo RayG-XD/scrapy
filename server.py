@@ -45,6 +45,40 @@ async def get_recent_jobs():
         {"id": "job-097", "statusIcon": "check_circle", "statusColor": "text-green-500", "spider": "news_crawler", "startTime": "2023-10-23T08:00:00Z", "endTime": "2023-10-23T10:30:00Z", "totalItems": 42000},
     ]
 
+
+@app.get("/api/spiders")
+async def get_spiders():
+    return [
+        {
+          "name": "amazon_products",
+          "project": "default",
+          "allowedDomains": ["amazon.com", "amazon.co.uk"],
+          "startUrls": ["https://www.amazon.com/s?k=laptops"],
+          "lastRunStatus": "Success"
+        },
+        {
+          "name": "news_crawler",
+          "project": "default",
+          "allowedDomains": ["cnn.com", "bbc.com", "reuters.com"],
+          "startUrls": ["https://cnn.com", "https://bbc.com/news"],
+          "lastRunStatus": "Running"
+        },
+        {
+          "name": "crypto_prices",
+          "project": "finance",
+          "allowedDomains": ["coinmarketcap.com"],
+          "startUrls": ["https://coinmarketcap.com/all/views/all/"],
+          "lastRunStatus": "Failed"
+        },
+        {
+          "name": "real_estate_scraper",
+          "project": "housing",
+          "allowedDomains": ["zillow.com", "redfin.com"],
+          "startUrls": ["https://www.zillow.com/homes/for_sale/"],
+          "lastRunStatus": "Success"
+        }
+    ]
+
 # --- Static Files / Angular Application Routing ---
 
 # Path to the compiled Angular build output
