@@ -11,6 +11,8 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { Subject } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { ChangeDetectorRef } from '@angular/core';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 interface ExtractionResult {
@@ -54,7 +56,7 @@ export class InteractiveShellComponent {
   extractionResult: ExtractionResult | null = null;
   isEvaluating: boolean = false;
 
-  constructor() {
+  constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {
     // Setup debounced selector evaluation
     this.selectorSubject.pipe(
       debounceTime(400),
@@ -71,71 +73,23 @@ export class InteractiveShellComponent {
     this.fetchError = null;
     this.extractionResult = null;
 
-    // Simulate network delay and fetching source code
-    setTimeout(() => {
-      this.isFetching = false;
-      this.hasFetched = true;
+    this.http.post<{source: string}>('/api/shell/fetch', { url: this.targetUrl }).subscribe({
+      next: (res) => {
+        this.isFetching = false;
+        this.hasFetched = true;
+        this.fetchedSource = res.source;
+        this.cdr.detectChanges();
 
-      // Mock source code for quotes.toscrape.com
-      this.fetchedSource = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Quotes to Scrape</title>
-    <link rel="stylesheet" href="/static/bootstrap.min.css">
-    <link rel="stylesheet" href="/static/main.css">
-</head>
-<body>
-    <div class="container">
-        <div class="row header-box">
-            <div class="col-md-8">
-                <h1><a href="/" style="text-decoration: none">Quotes to Scrape</a></h1>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col-md-8">
-                <div class="quote" itemscope itemtype="http://schema.org/CreativeWork">
-                    <span class="text" itemprop="text">“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”</span>
-                    <span>by <small class="author" itemprop="author">Albert Einstein</small>
-                    <a href="/author/Albert-Einstein">(about)</a>
-                    </span>
-                    <div class="tags">
-                        Tags:
-                        <a class="tag" href="/tag/change/page/1/">change</a>
-                        <a class="tag" href="/tag/deep-thoughts/page/1/">deep-thoughts</a>
-                        <a class="tag" href="/tag/thinking/page/1/">thinking</a>
-                        <a class="tag" href="/tag/world/page/1/">world</a>
-                    </div>
-                </div>
-
-                <div class="quote" itemscope itemtype="http://schema.org/CreativeWork">
-                    <span class="text" itemprop="text">“It is our choices, Harry, that show what we truly are, far more than our abilities.”</span>
-                    <span>by <small class="author" itemprop="author">J.K. Rowling</small>
-                    <a href="/author/J-K-Rowling">(about)</a>
-                    </span>
-                    <div class="tags">
-                        Tags:
-                        <a class="tag" href="/tag/abilities/page/1/">abilities</a>
-                        <a class="tag" href="/tag/choices/page/1/">choices</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 tags-box">
-                <h2>Top Ten tags</h2>
-                <span class="tag-item"><a class="tag" style="font-size: 28px" href="/tag/love/">love</a></span>
-                <span class="tag-item"><a class="tag" style="font-size: 26px" href="/tag/inspirational/">inspirational</a></span>
-            </div>
-        </div>
-    </div>
-</body>
-</html>`;
-
-      // Re-evaluate current selector if any
-      if (this.selectorExpression) {
-         this.evaluateSelector(this.selectorExpression);
+        if (this.selectorExpression) {
+          this.evaluateSelector(this.selectorExpression);
+        }
+      },
+      error: (err) => {
+        this.isFetching = false;
+        this.fetchError = err.message || 'Error fetching URL';
+        this.cdr.detectChanges();
       }
-    }, 800);
+    });
   }
 
   onSelectorInput(event: Event) {
@@ -160,61 +114,28 @@ export class InteractiveShellComponent {
 
     this.isEvaluating = true;
 
-    // Simulate server-side evaluation delay
-    setTimeout(() => {
-      this.isEvaluating = false;
+    const payload = {
+      source: this.fetchedSource,
+      expression: expression,
+      type: this.selectorType
+    };
 
-      try {
-        // Mock evaluation logic for demonstration purposes
-        let results: string[] = [];
-        let isValid = true;
-        let errorMessage = undefined;
-
-        if (this.selectorType === 'css') {
-           if (expression === '.quote .text' || expression === 'span.text') {
-             results = [
-               "“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”",
-               "“It is our choices, Harry, that show what we truly are, far more than our abilities.”"
-             ];
-           } else if (expression === '.author') {
-             results = ["Albert Einstein", "J.K. Rowling"];
-           } else if (expression === '.tag') {
-             results = ["change", "deep-thoughts", "thinking", "world", "abilities", "choices", "love", "inspirational"];
-           } else if (expression.includes('invalid!@#')) {
-             isValid = false;
-             errorMessage = 'Invalid CSS selector syntax.';
-           } else {
-              // Generic fallback for mock
-              results = [];
-           }
-        } else if (this.selectorType === 'xpath') {
-          if (expression === '//span[@class="text"]/text()') {
-            results = [
-               "“The world as we have created it is a process of our thinking. It cannot be changed without changing our thinking.”",
-               "“It is our choices, Harry, that show what we truly are, far more than our abilities.”"
-             ];
-          } else if (expression.startsWith('//')) {
-            results = []; // valid xpath, no results
-          } else {
-             isValid = false;
-             errorMessage = 'Invalid XPath expression. Must start with / or //';
-          }
-        }
-
-        this.extractionResult = {
-          valid: isValid,
-          count: results.length,
-          data: results,
-          error: errorMessage
-        };
-      } catch (e: any) {
+    this.http.post<ExtractionResult>('/api/shell/evaluate', payload).subscribe({
+      next: (res) => {
+        this.isEvaluating = false;
+        this.extractionResult = res;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.isEvaluating = false;
         this.extractionResult = {
           valid: false,
           count: 0,
           data: [],
-          error: e.message || 'Error evaluating selector'
+          error: err.error?.error || 'Error evaluating selector'
         };
+        this.cdr.detectChanges();
       }
-    }, 300);
+    });
   }
 }
