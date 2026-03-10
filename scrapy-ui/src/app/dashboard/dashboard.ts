@@ -5,7 +5,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { DatePipe, CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { OnInit } from '@angular/core';
+import { OnInit, ChangeDetectorRef } from '@angular/core';
 
 export interface ActiveJob {
   id: string;
@@ -48,10 +48,40 @@ export class Dashboard implements OnInit {
   errorRate = '0%';
   memoryUsage = '0 MB';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
 
   ngOnInit() {
     this.fetchSystemStatus();
+    this.fetchActiveJobs();
+    this.fetchRecentJobs();
+  }
+
+  fetchActiveJobs() {
+    this.http.get<ActiveJob[]>('/api/jobs/active').subscribe({
+      next: (data) => {
+        this.activeJobsData = [...data];
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to fetch active jobs:', err);
+      }
+    });
+  }
+
+  fetchRecentJobs() {
+    this.http.get<any[]>('/api/jobs/recent').subscribe({
+      next: (data) => {
+        this.recentJobsData = [...data.map(job => ({
+          ...job,
+          startTime: new Date(job.startTime),
+          endTime: new Date(job.endTime)
+        }))];
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to fetch recent jobs:', err);
+      }
+    });
   }
 
   fetchSystemStatus() {
@@ -71,19 +101,11 @@ export class Dashboard implements OnInit {
 
   // Active Jobs Table Data
   displayedActiveColumns: string[] = ['id', 'spider', 'status', 'duration', 'items', 'speed', 'actions'];
-  activeJobsData: ActiveJob[] = [
-    { id: 'job-101', spider: 'amazon_products', status: 'Running', duration: '00:15:20', items: 1250, speed: '80/min' },
-    { id: 'job-102', spider: 'news_crawler', status: 'Running', duration: '01:05:10', items: 5600, speed: '120/min' },
-    { id: 'job-103', spider: 'real_estate', status: 'Paused', duration: '00:45:00', items: 850, speed: '0/min' },
-  ];
+  activeJobsData: ActiveJob[] = [];
 
   // Recent Jobs Table Data
   displayedRecentColumns: string[] = ['status', 'spider', 'startTime', 'endTime', 'totalItems', 'actions'];
-  recentJobsData: RecentJob[] = [
-    { id: 'job-099', statusIcon: 'check_circle', statusColor: 'text-green-500', spider: 'amazon_products', startTime: new Date(Date.now() - 86400000), endTime: new Date(Date.now() - 82800000), totalItems: 15000 },
-    { id: 'job-098', statusIcon: 'cancel', statusColor: 'text-red-500', spider: 'crypto_prices', startTime: new Date(Date.now() - 172800000), endTime: new Date(Date.now() - 172000000), totalItems: 450 },
-    { id: 'job-097', statusIcon: 'check_circle', statusColor: 'text-green-500', spider: 'news_crawler', startTime: new Date(Date.now() - 259200000), endTime: new Date(Date.now() - 250000000), totalItems: 42000 },
-  ];
+  recentJobsData: RecentJob[] = [];
 
   runSpider() {
     console.log('Run Spider clicked');
