@@ -24,3 +24,8 @@ def test_spiders():
     response = client.get("/api/spiders")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
+
+def test_jobs():
+    response = client.get("/api/jobs")
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
