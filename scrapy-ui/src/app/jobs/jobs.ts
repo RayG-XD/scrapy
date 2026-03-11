@@ -1,5 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Component } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -41,7 +40,7 @@ export interface JobItem {
   templateUrl: './jobs.html',
   styleUrl: './jobs.scss'
 })
-export class Jobs implements OnInit {
+export class Jobs {
   displayedColumns: string[] = [
     'id',
     'spider',
@@ -54,29 +53,61 @@ export class Jobs implements OnInit {
     'actions'
   ];
 
-  jobsData: JobItem[] = [];
-
-  constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
-
-  ngOnInit() {
-    this.fetchJobs();
-  }
-
-  fetchJobs() {
-    this.http.get<any[]>('/api/jobs').subscribe({
-      next: (data) => {
-        this.jobsData = data.map(job => ({
-          ...job,
-          startedAt: new Date(job.startedAt),
-          endedAt: job.endedAt ? new Date(job.endedAt) : undefined
-        }));
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Failed to fetch jobs:', err);
-      }
-    });
-  }
+  jobsData: JobItem[] = [
+    {
+      id: 'job-105',
+      spider: 'amazon_products',
+      status: 'Running',
+      startedAt: new Date(Date.now() - 15 * 60000), // 15 mins ago
+      elapsedTime: '00:15:22',
+      itemsScraped: 1250,
+      itemsPerMin: 81.3,
+      errorCount: 2
+    },
+    {
+      id: 'job-104',
+      spider: 'news_crawler',
+      status: 'Paused',
+      startedAt: new Date(Date.now() - 45 * 60000),
+      elapsedTime: '00:45:00',
+      itemsScraped: 850,
+      itemsPerMin: 0,
+      errorCount: 0
+    },
+    {
+      id: 'job-103',
+      spider: 'crypto_prices',
+      status: 'Completed',
+      startedAt: new Date(Date.now() - 120 * 60000),
+      endedAt: new Date(Date.now() - 110 * 60000),
+      elapsedTime: '00:10:00',
+      itemsScraped: 450,
+      itemsPerMin: 45.0,
+      errorCount: 0
+    },
+    {
+      id: 'job-102',
+      spider: 'real_estate_scraper',
+      status: 'Failed',
+      startedAt: new Date(Date.now() - 300 * 60000),
+      endedAt: new Date(Date.now() - 295 * 60000),
+      elapsedTime: '00:05:12',
+      itemsScraped: 12,
+      itemsPerMin: 2.3,
+      errorCount: 50
+    },
+    {
+      id: 'job-101',
+      spider: 'amazon_products',
+      status: 'Completed',
+      startedAt: new Date(Date.now() - 1440 * 60000),
+      endedAt: new Date(Date.now() - 1380 * 60000),
+      elapsedTime: '01:00:00',
+      itemsScraped: 15000,
+      itemsPerMin: 250.0,
+      errorCount: 15
+    }
+  ];
 
   applyFilter(event: Event) {
     const filterValue = (event.target as HTMLInputElement).value;

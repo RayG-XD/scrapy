@@ -1,5 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Component } from '@angular/core';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
@@ -33,27 +32,39 @@ export interface SpiderItem {
   templateUrl: './spiders.html',
   styleUrl: './spiders.scss'
 })
-export class Spiders implements OnInit {
+export class Spiders {
   displayedColumns: string[] = ['name', 'project', 'allowedDomains', 'startUrls', 'lastRunStatus', 'actions'];
-  spidersData: SpiderItem[] = [];
 
-  constructor(private http: HttpClient, private cdr: ChangeDetectorRef) {}
-
-  ngOnInit() {
-    this.fetchSpiders();
-  }
-
-  fetchSpiders() {
-    this.http.get<SpiderItem[]>('/api/spiders').subscribe({
-      next: (data) => {
-        this.spidersData = [...data];
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error('Failed to fetch spiders:', err);
-      }
-    });
-  }
+  spidersData: SpiderItem[] = [
+    {
+      name: 'amazon_products',
+      project: 'default',
+      allowedDomains: ['amazon.com', 'amazon.co.uk'],
+      startUrls: ['https://www.amazon.com/s?k=laptops'],
+      lastRunStatus: 'Success'
+    },
+    {
+      name: 'news_crawler',
+      project: 'default',
+      allowedDomains: ['cnn.com', 'bbc.com', 'reuters.com'],
+      startUrls: ['https://cnn.com', 'https://bbc.com/news'],
+      lastRunStatus: 'Running'
+    },
+    {
+      name: 'crypto_prices',
+      project: 'finance',
+      allowedDomains: ['coinmarketcap.com'],
+      startUrls: ['https://coinmarketcap.com/all/views/all/'],
+      lastRunStatus: 'Failed'
+    },
+    {
+      name: 'real_estate_scraper',
+      project: 'housing',
+      allowedDomains: ['zillow.com', 'redfin.com'],
+      startUrls: ['https://www.zillow.com/homes/for_sale/'],
+      lastRunStatus: 'Success'
+    }
+  ];
 
   applyFilter(event: Event) {
     const filterValue = (event.target as HTMLInputElement).value;

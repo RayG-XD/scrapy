@@ -29,6 +29,7 @@ async def get_system_status():
     }
 
 
+
 @app.get("/api/jobs/active")
 async def get_active_jobs():
     return [
@@ -137,6 +138,54 @@ async def get_all_jobs():
           "errorCount": 15
         }
     ]
+
+from pydantic import BaseModel
+import httpx
+from scrapy import Selector
+
+class FetchRequest(BaseModel):
+    url: str
+
+class EvaluateRequest(BaseModel):
+    source: str
+    expression: str
+    type: str
+
+@app.post("/api/shell/fetch")
+async def fetch_url(req: FetchRequest):
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(req.url, follow_redirects=True)
+            return {"source": response.text}
+        except Exception as e:
+            return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.post("/api/shell/evaluate")
+async def evaluate_selector(req: EvaluateRequest):
+    try:
+        sel = Selector(text=req.source)
+        results = []
+        if req.type == "css":
+            results = sel.css(req.expression).getall()
+        elif req.type == "xpath":
+            results = sel.xpath(req.expression).getall()
+        elif req.type == "regex":
+            results = sel.re(req.expression)
+        else:
+            return JSONResponse(status_code=400, content={"error": f"Invalid selector type: {req.type}"})
+
+        return {
+            "valid": True,
+            "count": len(results),
+            "data": results
+        }
+    except Exception as e:
+        return {
+            "valid": False,
+            "count": 0,
+            "data": [],
+            "error": str(e)
+        }
 
 # --- Static Files / Angular Application Routing ---
 
