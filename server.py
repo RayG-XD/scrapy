@@ -158,6 +158,7 @@ async def fetch_url(req: FetchRequest):
             response = await client.get(req.url, follow_redirects=True)
             return {"source": response.text}
         except Exception as e:
+            from fastapi.responses import JSONResponse
             return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.post("/api/shell/evaluate")
@@ -172,6 +173,7 @@ async def evaluate_selector(req: EvaluateRequest):
         elif req.type == "regex":
             results = sel.re(req.expression)
         else:
+            from fastapi.responses import JSONResponse
             return JSONResponse(status_code=400, content={"error": f"Invalid selector type: {req.type}"})
 
         return {
@@ -187,6 +189,87 @@ async def evaluate_selector(req: EvaluateRequest):
             "error": str(e)
         }
 
+
+# --- Data Management Endpoints ---
+
+class ItemSchema(BaseModel):
+    name: str
+    fields: list[str]
+
+class PipelineSchema(BaseModel):
+    name: str
+    path: str
+    active: bool
+    priority: int
+
+class FeedSchema(BaseModel):
+    uri: str
+    format: str
+    encoding: str
+    active: bool
+
+# In-memory mock databases
+mock_items = [
+    {"name": "ProductItem", "fields": ["url", "name", "price", "image_urls"]},
+    {"name": "ReviewItem", "fields": ["product_id", "author", "rating", "text", "date"]}
+]
+
+mock_pipelines = [
+    {"name": "DuplicatesPipeline", "path": "myproject.pipelines.DuplicatesPipeline", "active": True, "priority": 100},
+    {"name": "PriceCalculationPipeline", "path": "myproject.pipelines.PriceCalculationPipeline", "active": True, "priority": 200},
+    {"name": "ImagePipeline", "path": "scrapy.pipelines.images.ImagesPipeline", "active": False, "priority": 300},
+    {"name": "DatabasePostgresPipeline", "path": "myproject.pipelines.DatabasePostgresPipeline", "active": True, "priority": 800}
+]
+
+mock_feeds = [
+    {"uri": "s3://my-bucket/scrapy-exports/%(name)s/%(time)s.json", "format": "json", "encoding": "utf-8", "active": True},
+    {"uri": "ftp://user:pass@ftp.example.com/daily-dump.csv", "format": "csv", "encoding": "utf-8", "active": False}
+]
+
+@app.get("/api/items")
+async def get_items():
+    return mock_items
+
+@app.post("/api/items")
+async def create_item(item: ItemSchema):
+    new_item = item.dict()
+    mock_items.append(new_item)
+    return {"message": "Item created successfully", "item": new_item}
+
+@app.get("/api/pipelines")
+async def get_pipelines():
+    return mock_pipelines
+
+@app.post("/api/pipelines/toggle")
+async def toggle_pipeline(pipeline: PipelineSchema):
+    for p in mock_pipelines:
+        if p["name"] == pipeline.name:
+            p["active"] = pipeline.active
+            return {"message": "Pipeline toggled successfully", "pipeline": p}
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=404, content={"error": "Pipeline not found"})
+
+@app.post("/api/pipelines/reorder")
+async def reorder_pipelines(pipelines: list[PipelineSchema]):
+    global mock_pipelines
+    mock_pipelines = [p.dict() for p in pipelines]
+    return {"message": "Pipelines reordered successfully"}
+
+@app.get("/api/feeds")
+async def get_feeds():
+    return mock_feeds
+
+@app.post("/api/feeds/test")
+async def test_feed_connection(feed: FeedSchema):
+    # Mocking a successful test connection for all feeds
+    return {"message": f"Connection to {feed.uri} successful!", "success": True}
+
+@app.post("/api/feeds")
+async def create_feed(feed: FeedSchema):
+    new_feed = feed.dict()
+    mock_feeds.append(new_feed)
+    return {"message": "Export feed created successfully", "feed": new_feed}
+
 # --- Static Files / Angular Application Routing ---
 
 # Path to the compiled Angular build output
@@ -201,6 +284,7 @@ if os.path.exists(angular_dist_path):
     async def serve_angular(request: Request, full_path: str):
         # Ignore API routes
         if full_path.startswith("api/"):
+            from fastapi.responses import JSONResponse
             return JSONResponse(status_code=404, content={"message": "API route not found"})
 
         # Check if the requested file exists in the static directory (e.g. styles.css)

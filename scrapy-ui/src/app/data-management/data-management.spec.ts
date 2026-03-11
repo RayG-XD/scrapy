@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 
 import { DataManagementComponent } from './data-management';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 describe('DataManagementComponent', () => {
   let component: DataManagementComponent;
@@ -9,7 +10,7 @@ describe('DataManagementComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DataManagementComponent, NoopAnimationsModule]
+      imports: [DataManagementComponent, NoopAnimationsModule, HttpClientTestingModule]
     })
     .compileComponents();
 
