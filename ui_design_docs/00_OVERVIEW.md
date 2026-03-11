@@ -88,6 +88,14 @@ A persistent navigation menu providing quick access to all core modules:
 - **Categorized Forms:** Group settings logically (e.g., Concurrency, AutoThrottle, Proxies, User-Agents).
 - **Middleware Manager:** List active Downloader and Spider middlewares with their respective integer priorities. Allow toggling standard middlewares (e.g., `HttpProxyMiddleware`, `OffsiteMiddleware`).
 
+#### 7. Future Roadmap & Advanced Features
+**Purpose:** Moving from basic CRUD to an enterprise-grade Command Center.
+- **Advanced Orchestration:** Distributed crawling (Scrapyd), Playwright orchestration, and Node Topology.
+- **Resilience & Anti-Ban:** Proxy Rotation health, AI-powered auto-healing selectors, and Ban Analytics.
+- **Data Quality:** Spidermon observability, visual item validation, and drop rate alerts.
+- **Visual Builder:** A no-code/low-code node-based canvas to construct spiders visually.
+- **See `07_FUTURE_ROADMAP.md` for a comprehensive breakdown of these planned capabilities.**
+
 ---
 
 ## 3. Technology Stack & Integration
