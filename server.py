@@ -208,6 +208,85 @@ class FeedSchema(BaseModel):
     encoding: str
     active: bool
 
+# --- Settings Endpoints ---
+
+mock_settings = {
+    "core": {
+        "BOT_NAME": "myproject_api",
+        "USER_AGENT": "Scrapy/2.14 (+http://scrapy.org)",
+        "ROBOTSTXT_OBEY": True
+    },
+    "concurrency": {
+        "CONCURRENT_REQUESTS": 32,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 16,
+        "CONCURRENT_REQUESTS_PER_IP": 0,
+        "DOWNLOAD_DELAY": 0.5,
+        "RANDOMIZE_DOWNLOAD_DELAY": True
+    },
+    "autothrottle": {
+        "AUTOTHROTTLE_ENABLED": True,
+        "AUTOTHROTTLE_START_DELAY": 5.0,
+        "AUTOTHROTTLE_MAX_DELAY": 60.0,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 2.0,
+        "AUTOTHROTTLE_DEBUG": False
+    },
+    "caching": {
+        "HTTPCACHE_ENABLED": False,
+        "HTTPCACHE_DIR": "httpcache",
+        "HTTPCACHE_EXPIRATION_SECS": 86400,
+        "HTTPCACHE_STORAGE": "scrapy.extensions.httpcache.FilesystemCacheStorage",
+        "HTTPCACHE_POLICY": "scrapy.extensions.httpcache.DummyPolicy"
+    },
+    "raw": [
+        {"key": "LOG_LEVEL", "value": "DEBUG"},
+        {"key": "COOKIES_ENABLED", "value": "False"}
+    ]
+}
+
+mock_downloader_middlewares = [
+    {"path": "scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware", "priority": 100, "enabled": True, "isCustom": False},
+    {"path": "myproject.middlewares.CustomAuthMiddleware", "priority": 200, "enabled": True, "isCustom": True},
+    {"path": "scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware", "priority": 300, "enabled": False, "isCustom": False},
+    {"path": "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware", "priority": 350, "enabled": True, "isCustom": False},
+    {"path": "scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware", "priority": 400, "enabled": True, "isCustom": False},
+    {"path": "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware", "priority": 500, "enabled": True, "isCustom": False},
+]
+
+mock_spider_middlewares = [
+    {"path": "scrapy.spidermiddlewares.httperror.HttpErrorMiddleware", "priority": 50, "enabled": True, "isCustom": False},
+    {"path": "scrapy.spidermiddlewares.offsite.OffsiteMiddleware", "priority": 500, "enabled": True, "isCustom": False},
+    {"path": "scrapy.spidermiddlewares.referer.RefererMiddleware", "priority": 700, "enabled": True, "isCustom": False},
+    {"path": "scrapy.spidermiddlewares.urllength.UrlLengthMiddleware", "priority": 800, "enabled": True, "isCustom": False},
+    {"path": "scrapy.spidermiddlewares.depth.DepthMiddleware", "priority": 900, "enabled": True, "isCustom": False}
+]
+
+@app.get("/api/settings")
+async def get_settings():
+    return {
+        "form": mock_settings,
+        "middlewares": {
+            "downloader": mock_downloader_middlewares,
+            "spider": mock_spider_middlewares
+        }
+    }
+
+class SaveSettingsRequest(BaseModel):
+    form: dict
+    middlewares: dict
+
+@app.post("/api/settings")
+async def save_settings(req: SaveSettingsRequest):
+    global mock_settings
+    global mock_downloader_middlewares
+    global mock_spider_middlewares
+
+    mock_settings = req.form
+    mock_downloader_middlewares = req.middlewares.get("downloader", [])
+    mock_spider_middlewares = req.middlewares.get("spider", [])
+
+    return {"message": "Settings saved successfully", "status": "success"}
+
+
 # In-memory mock databases
 mock_items = [
     {"name": "ProductItem", "fields": ["url", "name", "price", "image_urls"]},

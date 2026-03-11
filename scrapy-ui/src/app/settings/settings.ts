@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -48,41 +49,22 @@ interface Middleware {
 export class SettingsComponent implements OnInit {
   settingsForm!: FormGroup;
 
-  downloaderMiddlewares: Middleware[] = [
-    { path: 'scrapy.downloadermiddlewares.robotstxt.RobotsTxtMiddleware', priority: 100, enabled: true, isCustom: false },
-    { path: 'scrapy.downloadermiddlewares.httpauth.HttpAuthMiddleware', priority: 300, enabled: true, isCustom: false },
-    { path: 'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware', priority: 350, enabled: true, isCustom: false },
-    { path: 'scrapy.downloadermiddlewares.defaultheaders.DefaultHeadersMiddleware', priority: 400, enabled: true, isCustom: false },
-    { path: 'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware', priority: 500, enabled: true, isCustom: false },
-    { path: 'scrapy.downloadermiddlewares.retry.RetryMiddleware', priority: 550, enabled: true, isCustom: false },
-    { path: 'scrapy.downloadermiddlewares.redirect.MetaRefreshMiddleware', priority: 580, enabled: true, isCustom: false },
-    { path: 'scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware', priority: 590, enabled: true, isCustom: false },
-    { path: 'scrapy.downloadermiddlewares.redirect.RedirectMiddleware', priority: 600, enabled: true, isCustom: false },
-    { path: 'scrapy.downloadermiddlewares.cookies.CookiesMiddleware', priority: 700, enabled: true, isCustom: false },
-    { path: 'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware', priority: 750, enabled: true, isCustom: false },
-    { path: 'scrapy.downloadermiddlewares.stats.DownloaderStats', priority: 850, enabled: true, isCustom: false },
-    { path: 'scrapy.downloadermiddlewares.httpcache.HttpCacheMiddleware', priority: 900, enabled: true, isCustom: false }
-  ];
+  downloaderMiddlewares: Middleware[] = [];
+  spiderMiddlewares: Middleware[] = [];
+  isLoading = true;
 
-  spiderMiddlewares: Middleware[] = [
-    { path: 'scrapy.spidermiddlewares.httperror.HttpErrorMiddleware', priority: 50, enabled: true, isCustom: false },
-    { path: 'scrapy.spidermiddlewares.offsite.OffsiteMiddleware', priority: 500, enabled: true, isCustom: false },
-    { path: 'scrapy.spidermiddlewares.referer.RefererMiddleware', priority: 700, enabled: true, isCustom: false },
-    { path: 'scrapy.spidermiddlewares.urllength.UrlLengthMiddleware', priority: 800, enabled: true, isCustom: false },
-    { path: 'scrapy.spidermiddlewares.depth.DepthMiddleware', priority: 900, enabled: true, isCustom: false }
-  ];
-
-  constructor(private fb: FormBuilder, private snackBar: MatSnackBar) {}
+  constructor(private fb: FormBuilder, private snackBar: MatSnackBar, private http: HttpClient) {}
 
   ngOnInit() {
     this.initForm();
+    this.loadSettings();
   }
 
   initForm() {
     this.settingsForm = this.fb.group({
       core: this.fb.group({
-        BOT_NAME: ['myproject', Validators.required],
-        USER_AGENT: ['Scrapy/2.11 (+http://scrapy.org)'],
+        BOT_NAME: ['', Validators.required],
+        USER_AGENT: [''],
         ROBOTSTXT_OBEY: [true]
       }),
       concurrency: this.fb.group({
@@ -103,16 +85,51 @@ export class SettingsComponent implements OnInit {
         HTTPCACHE_ENABLED: [false],
         HTTPCACHE_DIR: ['httpcache'],
         HTTPCACHE_EXPIRATION_SECS: [0, [Validators.min(0)]],
-        HTTPCACHE_STORAGE: ['scrapy.extensions.httpcache.FilesystemCacheStorage'],
-        HTTPCACHE_POLICY: ['scrapy.extensions.httpcache.DummyPolicy'],
+        HTTPCACHE_STORAGE: [''],
+        HTTPCACHE_POLICY: [''],
         HTTPCACHE_IGNORE_HTTP_CODES: [[]]
       }),
       raw: this.fb.array([])
     });
+  }
 
-    // Add a couple of initial custom settings for demo
-    this.addRawSetting('LOG_LEVEL', 'INFO');
-    this.addRawSetting('COOKIES_ENABLED', 'True');
+  loadSettings() {
+    this.isLoading = true;
+    this.http.get<any>('/api/settings').subscribe({
+      next: (data) => {
+        // Load Form Values
+        if (data.form) {
+           this.settingsForm.patchValue({
+             core: data.form.core || {},
+             concurrency: data.form.concurrency || {},
+             autothrottle: data.form.autothrottle || {},
+             caching: data.form.caching || {}
+           });
+
+           // Clear and load raw settings
+           this.rawSettings.clear();
+           if (data.form.raw) {
+              data.form.raw.forEach((item: any) => {
+                 this.addRawSetting(item.key, item.value);
+              });
+           }
+        }
+
+        // Load Middlewares
+        if (data.middlewares) {
+           this.downloaderMiddlewares = data.middlewares.downloader || [];
+           this.spiderMiddlewares = data.middlewares.spider || [];
+        }
+
+        this.settingsForm.markAsPristine();
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load settings', err);
+        this.snackBar.open('Failed to load settings from server', 'Close', { duration: 3000 });
+        this.isLoading = false;
+      }
+    });
   }
 
   get rawSettings(): FormArray {
@@ -159,9 +176,24 @@ export class SettingsComponent implements OnInit {
 
   saveSettings() {
     if (this.settingsForm.valid) {
-      console.log('Settings Saved!', this.settingsForm.value);
-      this.snackBar.open('Settings saved successfully', 'Close', { duration: 3000 });
-      this.settingsForm.markAsPristine();
+      const payload = {
+         form: this.settingsForm.value,
+         middlewares: {
+            downloader: this.downloaderMiddlewares,
+            spider: this.spiderMiddlewares
+         }
+      };
+
+      this.http.post('/api/settings', payload).subscribe({
+         next: () => {
+            this.snackBar.open('Settings saved successfully', 'Close', { duration: 3000 });
+            this.settingsForm.markAsPristine();
+         },
+         error: (err) => {
+            console.error('Failed to save settings', err);
+            this.snackBar.open('Failed to save settings', 'Close', { duration: 3000 });
+         }
+      });
     } else {
       this.snackBar.open('Please correct errors before saving', 'Close', { duration: 3000 });
     }
