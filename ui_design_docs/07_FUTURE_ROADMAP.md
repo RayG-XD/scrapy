@@ -61,3 +61,25 @@ As the UI scales to teams:
 - **User Roles:** Admin (can edit spiders, deploy code), Operator (can run/stop jobs), Viewer (can only see data and stats).
 - **Audit Logs:** A security pane tracking "Who started Job X," "Who edited Setting Y," and "Who deployed Version Z."
 - **Secret Management:** A secure vault UI to manage API keys, database passwords, and proxy credentials without exposing them in plain text in `settings.py`.
+
+## 7. Developer Experience (DX) & AI
+
+### 7.1. Prompt-to-Spider (AI Generator)
+- **Generative AI Integration:** A text input box where a user types: *"Write a spider to crawl example.com, extract product titles and prices, and follow the next page button."* The UI uses an LLM backend (like OpenAI or local Ollama) to generate the complete `scrapy.Spider` code, displaying it in the Monaco editor for immediate testing.
+
+### 7.2. Step-Through Pipeline Debugger
+- **Visual Breakpoints:** Currently, debugging item pipelines requires print statements. This feature would allow users to pause a running spider right as it yields an item, and visually step it through `Pipeline A -> Pipeline B -> Pipeline C`.
+- **State Diffing:** Show a side-by-side JSON diff of how the `Item` mutates as it passes through each enabled pipeline (e.g., watching `PriceCalculationPipeline` multiply the base price by tax).
+
+## 8. Operations & Lifecycle Management
+
+### 8.1. Cron Job Scheduler & Calendar
+- **Visual Cron Builder:** Replace command-line `cron` with a UI calendar. Users can select a spider, set a frequency (e.g., "Every Tuesday at 3 AM"), and view a Gantt chart of upcoming scheduled runs to avoid cluster bottlenecks.
+- **Dependency Chaining:** Configure jobs to trigger sequentially: *"Run Spider B only if Spider A finishes with status Success and > 100 items."*
+
+### 8.2. Webhooks & Alerting Hub
+- **Integration Management:** A dedicated tab to configure outgoing webhooks (Slack, Discord, PagerDuty, Email).
+- **Event Subscriptions:** Subscribe to specific engine signals visually: `spider_opened`, `spider_closed`, `item_dropped`, or `request_dropped`.
+
+### 8.3. Performance Profiling (Flame Graphs)
+- **Bottleneck Analysis:** A visual profiler that generates Flame Graphs of a spider run. This helps developers immediately see if a spider is spending 90% of its time waiting on HTTP requests, running heavy CPU-bound XPath queries, or blocking on database inserts in a pipeline.
